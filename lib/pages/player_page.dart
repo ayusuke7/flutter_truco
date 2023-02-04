@@ -162,7 +162,7 @@ class _PlayerTrucoState extends State<PlayerTruco> {
   @override
   void initState() {
     super.initState();
-    //_conectServer();
+    _conectServer();
   }
 
   @override

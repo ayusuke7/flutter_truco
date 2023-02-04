@@ -44,7 +44,7 @@ class _MenuPageState extends State<MenuPage> {
               setState(() { player = model; });
               Storage.saveModelPlayer(model);
               Navigator.push(context, MaterialPageRoute(
-                builder: (ctx) => PlayerTrucoGame(model: player)
+                builder: (ctx) => PlayerTruco(model: player)
               ));
             },
           ),

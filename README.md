@@ -18,33 +18,65 @@ Clone o projeto
 
 ```bash
   git clone https://github.com/ayusuke7/FlutterTruco
-```
 
-Entre no diretório do projeto
-
-```bash
   cd FlutterTruco
-```
 
-Instale as dependências
+  flutter pub get
 
-```bash
-  flutter pub get packages
-```
-
-Inicie o servidor
-
-```bash
-  flutter run android or
-  flutter run ios
+  flutter run
 ```
 
 Obs: Don't work with Web
 
-## Change Board and Barries
+## Usage
 
-The board is mounted based in list with int, when 1 is path and 0 is barried
-Obs: enemys its setted in game loop with number 2
+The Game use connection Server/Client in localhost or intranet.
+
+It is possible to choose between Table and Player when starting the game.
+
+The game needs you to start the server on some device. The server will wait for the others to connect up to a total of 4 devices.
+
+![App Screenshot](./.github/start.png)
+
+### Table Mode
+
+Initialize GameTruco with instance of Player() can that is "auto" or "host" specification address of the player.;
+
+```dart
+new Player({
+  host: 192.168.1.10,
+  name: "Rick"
+});
+```
+
+or Bot player
+
+```dart
+new Player({
+  auto: true,
+  name: "I'm Bot"
+});
+```
+
+![App Screenshot](./.github/server.png)
+
+### Player Mode
+
+Initialize PlayerTruco with instance of CreatePlayerModel()
+specification address of the player.;
+
+Example:
+
+```dart
+PlayerTruco(
+  model: CreatePlayerModel(
+    host: '192.168.1.10',
+    name: 'Rick'
+  ),
+)
+```
+
+![App Screenshot](./.github/player.png)
 
 ## Autores
 

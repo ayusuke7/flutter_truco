@@ -54,7 +54,7 @@ class _GameTrucoState extends State<GameTruco> {
     await Future.delayed(Duration(seconds: 2));
 
     /* Uncomment code to distruition cards  */
-    //_distribuition();
+    _distribuition();
   }
 
   void _sendBroadcastMesa({bool delay = false}) async {

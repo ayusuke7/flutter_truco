@@ -10,20 +10,20 @@ import 'package:flutter_truco/models/mesa.dart';
 import 'package:flutter_truco/models/player.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-class PlayerTrucoGame extends StatefulWidget {
+class PlayerTruco extends StatefulWidget {
   
   final CreatePlayerModel? model;
 
-  const PlayerTrucoGame({ 
+  const PlayerTruco({ 
     Key? key, 
     required this.model 
   }) : super(key: key);
 
   @override
-  _PlayerTrucoGameState createState() => _PlayerTrucoGameState();
+  _PlayerTrucoState createState() => _PlayerTrucoState();
 }
 
-class _PlayerTrucoGameState extends State<PlayerTrucoGame> {
+class _PlayerTrucoState extends State<PlayerTruco> {
   
   MesaModel mesa = MesaModel();
   
@@ -162,7 +162,7 @@ class _PlayerTrucoGameState extends State<PlayerTrucoGame> {
   @override
   void initState() {
     super.initState();
-    _conectServer();
+    //_conectServer();
   }
 
   @override

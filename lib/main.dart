@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_truco/models/player.dart';
-import 'package:flutter_truco/pages/menu_page.dart';
 import 'package:flutter_truco/pages/mesa_page.dart';
-import 'package:flutter_truco/pages/server_page.dart';
 import 'package:flutter_truco/styles/theme.dart';
 
 void main() {

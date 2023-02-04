@@ -1,16 +1,51 @@
-# flutter_truco
+## Etiquetas
 
-A new Flutter project.
+Adicione etiquetas de algum lugar, como: [shields.io](https://shields.io/)
 
-## Getting Started
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 
-This project is a starting point for a Flutter application.
+# Flutter Truco Game (Network)
 
-A few resources to get you started if this is your first Flutter project:
+The flutter game with connection in network (localhost and intranet)
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+## Screenshots
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+![App Screenshot](./.github/capture.gif)
+
+## Rodando localmente
+
+Clone o projeto
+
+```bash
+  git clone https://github.com/ayusuke7/FlutterTruco
+```
+
+Entre no diretório do projeto
+
+```bash
+  cd FlutterTruco
+```
+
+Instale as dependências
+
+```bash
+  flutter pub get packages
+```
+
+Inicie o servidor
+
+```bash
+  flutter run android or
+  flutter run ios
+```
+
+Obs: Don't work with Web
+
+## Change Board and Barries
+
+The board is mounted based in list with int, when 1 is path and 0 is barried
+Obs: enemys its setted in game loop with number 2
+
+## Autores
+
+- [@ayusuke7](https://github.com/ayusuke7)

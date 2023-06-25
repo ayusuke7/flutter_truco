@@ -13,10 +13,10 @@ class Player {
   String? host;
   
   bool auto;
-  int number;
+  int id;
 
   Player({
-    required this.number,
+    required this.id,
     this.auto = false,
     this.name,
     this.asset,
@@ -26,9 +26,7 @@ class Player {
   List<CardModel> get cards => _cards;
 
   Color get color {
-
-    if(number == 0 || number == 2) return Colors.blue;
-
+    if(id == 0 || id == 2) return Colors.blue;
     return Colors.red;
   }
   
@@ -37,14 +35,15 @@ class Player {
   }
 
   void setCards(List<CardModel> newCards, {CardModel? vira}){
-    this._cards = newCards.map((e){
+    _cards.clear();
+    _cards = newCards.map((e){
       var card = CardModel(
+        player: id,
         naipe: e.naipe, 
         value: e.value,
-        player: number,
       );
       if(vira != null){
-        var manil =  vira.value == 13 ? 4 : vira.value + 1;
+        var manil = vira.value == 13 ? 4 : vira.value + 1;
         card.manil = e.value == manil;
       }
       return card;
@@ -52,27 +51,27 @@ class Player {
   }
   
   void removeCard(CardModel card){
-    this._cards.removeWhere((c) => c.uui == card.uui);
+    _cards.removeWhere((c) => c.uui == card.uui);
   }
   
   void addCard(CardModel card){
-    this._cards.insert(0, CardModel(
+    _cards.insert(0, CardModel(
       naipe: card.naipe, 
       value: card.value,
-      player: number
+      player: id
     ));
   }
   
   void addCards(List<CardModel> newCards){
-    this._cards.insertAll(0, newCards.map((e) => CardModel(
+    _cards.insertAll(0, newCards.map((e) => CardModel(
       naipe: e.naipe, 
       value: e.value,
-      player: number
+      player: id
     )));
   }
 
   void clearCards(){
-    this._cards.clear();
+    _cards.clear();
   }
 
   String get getAsset {
@@ -86,10 +85,10 @@ class Player {
 
   String get getName {
     if(name != null) return "$name";
-    return "BOT $number";
+    return "BOT $id";
   }
 
-  int get equipe => number % 2 + 1;
+  int get equipe => id % 2 + 1;
 
   CardModel randomCard({ List<CardModel>? jogadas }){
     
@@ -102,7 +101,7 @@ class Player {
 
   factory Player.fromJson(Map<String, dynamic> json) => Player(
       name: json["name"],
-      number: json["number"],
+      id: json["id"],
       auto: json["auto"],
       asset: json["asset"],
       host: json["host"],
@@ -110,7 +109,7 @@ class Player {
 
   Map<String, dynamic> toJson() => {
       "name": name,
-      "number": number,
+      "id": id,
       "auto": auto,
       "asset": asset,
       "host": host,

@@ -45,7 +45,7 @@ class _PlayerTrucoState extends State<PlayerTruco> {
  
   void _onTapTruco(){
     var message = Message(
-      type: MessageTypes.GET_TRUCO, 
+      type: MessageTypes.getTruco, 
       data: player?.toJson()
     );
 
@@ -65,7 +65,7 @@ class _PlayerTrucoState extends State<PlayerTruco> {
     card.flip = select!.flip;
 
     var message = Message(
-      type: MessageTypes.SEND_CARD, 
+      type: MessageTypes.sendCard, 
       data: card.toJson()
     );
 
@@ -101,12 +101,12 @@ class _PlayerTrucoState extends State<PlayerTruco> {
       client?.connect().then((_){
         if(client!.connected){
           var play = Player(
-            number: client.hashCode,
+            id: client.hashCode,
             asset: "${widget.model?.avatar}",
             name: "${widget.model?.name}",
           );
           client?.sendMessage(Message(
-            type: MessageTypes.CONNECT, 
+            type: MessageTypes.connect, 
             data: play.toJson()
           ));
           setState(() { 
@@ -123,7 +123,7 @@ class _PlayerTrucoState extends State<PlayerTruco> {
   void _disconectServer() async {
     if(client != null && client!.connected){
       var message = Message(
-        type: MessageTypes.DISCONECT, 
+        type: MessageTypes.disconect, 
         data: player?.toJson() ?? {}
       );
       client?.sendMessage(message);
@@ -135,22 +135,22 @@ class _PlayerTrucoState extends State<PlayerTruco> {
     print(message.toJson());
 
     switch (message.type) {
-      case MessageTypes.DISTRIBUITION:
+      case MessageTypes.distribuition:
         var cards = listCardFromJson(message.data);
         setState(() {
           running = true;
-          player?.number = cards.first.player;
+          player?.id = cards.first.player;
           player?.setCards(cards);
         });
         break;
-      case MessageTypes.STATUS_MESA: 
+      case MessageTypes.statusMesa: 
         var tmp = MesaModel.fromJson(message.data);
         setState(() { mesa = tmp; });
         break;
-      case MessageTypes.GET_TRUCO: 
+      case MessageTypes.getTruco: 
         print(message.data);
         break;
-      case MessageTypes.DISCONECT:
+      case MessageTypes.disconect:
         setState(() { client = null; });
         Navigator.of(context).pop();
         break;
@@ -174,7 +174,7 @@ class _PlayerTrucoState extends State<PlayerTruco> {
   @override
   Widget build(BuildContext context) {
     var cards = player?.cards ?? [];
-    var vez = mesa.vez == player?.number;
+    var vez = mesa.vez == player?.id;
 
     var component;
 

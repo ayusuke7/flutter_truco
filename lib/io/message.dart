@@ -1,14 +1,21 @@
 import 'package:flutter_truco/models/mesa.dart';
 
 enum MessageTypes {
-  CONNECT,
-  DISCONECT,
-  SEND_CARD,
-  DISTRIBUITION,
-  GET_TRUCO,
-  ACCEPT_TRUCO,
-  STATUS_MESA,
+  connect,
+  disconect,
+  sendCard,
+  distribuition,
+  getTruco,
+  acceptTruco,
+  statusMesa,
 }
+
+MessageTypes getType(String typeMessage) {
+  return MessageTypes
+  .values
+  .firstWhere((m) => m.name == typeMessage);
+}
+
 class Message {
 
   final dynamic data;
@@ -24,14 +31,14 @@ class Message {
   });
 
   factory Message.fromJson(Map<String, dynamic> json) => Message(
-    type: json["type"], 
+    type: getType(json["type"]), 
     data: json["data"],
     mesa: json["mesa"],
     host: json["host"],
   );
 
   Map<String, dynamic> toJson() => {
-    "type": type,
+    "type": type.name,
     "data": data,
     "mesa": mesa,
     "host": host,

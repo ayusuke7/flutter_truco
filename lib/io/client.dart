@@ -3,8 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-
-import 'package:flutter_truco/io/message.dart';
+import 'message.dart';
 
 class Client {
   
@@ -28,9 +27,7 @@ class Client {
   Future<void> connect() async {
     try {
       socket = await Socket.connect(host, port);
-      socket?.listen(_listenData,
-        onDone: disconnect,
-      );
+      socket?.listen(_listenData);
       connected = true;
     } catch (exception) {
       connected = false;

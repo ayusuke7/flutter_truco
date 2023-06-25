@@ -29,38 +29,36 @@ class Server {
           var message = Message.fromJson(json.decode(data));
           message.host = socket.address.host;
           
-          if(message.type == MessageTypes.CONNECT){
-            sockets.add(socket);
+          if(message.type == MessageTypes.connect){
             print("client connect ${message.data}");
+            sockets.add(socket);
           }else 
-          if(message.type == MessageTypes.DISCONECT){
-            sockets.remove(socket);
+          if(message.type == MessageTypes.disconect){
             print("client disconect ${message.data}");
+            sockets.remove(socket);
           }
           
-          if(this.onData != null){
-            this.onData!(message);
+          if(onData != null){
+            onData!(message);
           }
 
         });
       });
-      this.running = true;
+      running = true;
       print('Server listening on $host:$port');
-
     } catch (ex) {
-      this.running = false;
-
+      running = false;
       if(this.onError != null) {
-        this.onError!("Error $ex");
+        onError!("Error $ex");
       }
     }
   }
 
   Future<void> stop() async {
-    await this.server?.close();
     print("stop server ${server?.address.host}");
-    this.server = null;
-    this.running = false;
+    await server?.close();
+    server = null;
+    running = false;
   }
 
   void sendTo(String host, Message message){

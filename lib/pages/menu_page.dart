@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_truco/commons/assets.dart';
 import 'package:flutter_truco/components/create_game.dart';
 import 'package:flutter_truco/models/create_player.dart';
-import 'package:flutter_truco/pages/mesa_page.dart';
 import 'package:flutter_truco/pages/player_page.dart';
 import 'package:flutter_truco/pages/server_page.dart';
 import 'package:flutter_truco/utils/storage.dart';

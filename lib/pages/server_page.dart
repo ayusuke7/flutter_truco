@@ -19,31 +19,33 @@ class _ServerPageState extends State<ServerPage> {
   final _network = NetworkInfo();
 
   List<Player> _players = [];
-  Server? _server;
+
   String? _host;
+  Server? _server;
   String? _message;
   
   void _getHost() async {
-    try {
-      var value = await _network.getWifiIP();
-      setState(() { _host = '$value'; });
-    } catch (e) {
-      print(e);
+    var value = await _network.getWifiIP();
+    if (value != null) {
+      setState(() {  _host = '$value'; });
+      _startServer();
+    } else {
+      _modalInput();
     }
   }
 
   void _startServer() async {
-    _server = Server(host: '$_host');
+    _server = Server(host: _host!);
     _server?.onData = (Message m){
       switch (m.type) {
-        case MessageTypes.CONNECT:
+        case MessageTypes.connect:
           if (_players.length < 4) {
             var player = Player.fromJson(m.data);
             player.host = m.host;
             setState(() { _players.add(player); });
           }
           break;
-        case MessageTypes.DISCONECT:
+        case MessageTypes.disconect:
           var player = Player.fromJson(m.data);
           var i = _players.indexWhere((p) => p.name == player.name);
           if(i > -1){
@@ -63,6 +65,49 @@ class _ServerPageState extends State<ServerPage> {
     await _server?.start();
   }
 
+  void _modalInput() {
+    showDialog(
+      barrierDismissible: false,
+      context: context, 
+      builder: (ctx) => SimpleDialog(
+        children: [
+          Container(
+            width: 250.0,
+            margin: const EdgeInsets.symmetric(
+              vertical: 50
+            ),
+            child: TextField(
+              onChanged: (value){
+                setState(() {
+                  _host = value;
+                });
+              },
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                hintText: "ex: 192.169.1.2",
+                fillColor: Colors.white,
+                filled: true,
+              ),
+            ),
+          ),
+          CustomButton(
+            icon: Icons.play_circle,
+            label: "Iniciar Servidor",
+            size: Size(250, 40),
+            backgroundColor: Colors.blue,
+            onPressed: () {
+              if (Helper.isIpv4(_host)) {
+                Navigator.pop(ctx);
+                _startServer();
+              }
+            },
+          ),
+        ],
+      )
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -70,24 +115,31 @@ class _ServerPageState extends State<ServerPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    String title = "Aguardando Jogadores se conectar";
-    String subtitle = "Conecte no servidor: $_host";
-
-    var run = _server != null && _server!.running;
-
-    if(!run){
-      title = "Inice o Servidor para Jogar";
-      subtitle = "Informe o IP do servidor para iniciar!";
+  void dispose() {
+    if (_server != null && _server!.running) {
+      _server?.stop();
     }
+    super.dispose();
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    String title = "Inicie o Servidor para Jogar";
+    String subtitle = "Informe o IP do servidor para iniciar!";
+
+    bool running = _server != null && _server!.running;
+
+    if(running){
+      title = "Aguardando Jogadores se conectar";
+      subtitle = "Conecte-se no IP do Servidor: ${_host ?? ''}";
+    }
 
     return Scaffold(
       backgroundColor: Colors.green[600],
       body: Container(
-        width: double.maxFinite,
+        padding: EdgeInsets.all(20.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ListTile(
@@ -108,102 +160,27 @@ class _ServerPageState extends State<ServerPage> {
               ),
             ),
             
-            if(!run) Container(
+            Container(
               margin: const EdgeInsets.symmetric(
-                vertical: 50
+                vertical: 50.0
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  for(var i=0; i<4; i++)
-                    i < _players.length
-                    ? CustomAvatar(
-                        onTap: (){
-                          if(_players.length == 4){
-                            setState(() {
-                              var tmp = _players.removeAt(i);
-                              var index = i < 3 ? i+1 : 0;
-                              _players.insert(index, tmp);
-                            });
-                          }
-                        },
-                        name: "${_players[i].getName}",
-                        backgroundNameColor: i % 2 == 0 ? Colors.red : Colors.blue,
-                        asset: Image.asset("${_players[i].getAsset}"),
-                      )
-                    : CustomAvatar(
-                        asset: Icon(Icons.add, color: Colors.white),
-                        onTap: (){
-                          setState(() {
-                            _players.add(new Player(
-                              number: _players.length,
-                              auto: true
-                            ));
-                          });
-                        },
-                      ),
-                ],
-              ),
-            ),
-
-            if(!run) Container(
-              width: 250.0,
-              margin: const EdgeInsets.symmetric(
-                vertical: 50
-              ),
-              child: TextField(
-                onChanged: (value){
-                  setState(() { _host = value; });
-                },
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: "ex: 192.169.1.2",
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Colors.white
-                    )
-                  ),
-                  border: OutlineInputBorder(),
-                ),
+                children: List.generate(4, (i) {
+                  var player = i < _players.length ? _players[i] : null;
+                  return _buildPlayer(player);
+                }),
               ),
             ),
             
             CustomButton(
-              disable: !Helper.isIpv4(_host),
-              icon: Icons.play_circle,
-              label: "Iniciar Servidor",
-              size: Size(250, 40),
-              backgroundColor: Colors.blue,
-              onPressed: _startServer,
-            ),
-            
-            const SizedBox(height: 10),
-            
-            CustomButton(
-              //disable: _players.length == 0 || _players.length == 4,
-              icon: Icons.add_circle,
-              label: "Adicionar BOT",
-              size: Size(250, 40),
-              backgroundColor: Colors.cyan,
-              onPressed: (){
-                setState(() {
-                  _players.add(new Player(
-                    number: _players.length,
-                    auto: true
-                  ));
-                });
-              },
-            ),
-            
-            const SizedBox(height: 10),
-            
-            CustomButton(
-              disable: _players.length != 4,
+              disable: _players.length < 4,
               icon: Icons.play_circle,
               label: "Iniciar Partida",
               size: Size(250, 40),
-              backgroundColor: Colors.blue,
-              onPressed: (){
+              backgroundColor: Colors.yellow,
+              color: Colors.black,
+              onPressed: () {
                 Navigator.pushReplacement(context, MaterialPageRoute(
                   builder: (_) => GameTruco(
                     server: _server,
@@ -212,57 +189,40 @@ class _ServerPageState extends State<ServerPage> {
                 ));
               },
             ),
-          
+            
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCreateServer() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text("Iniciar Servidor",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            fontSize: 24,
-          ),
-        ),
-        const SizedBox(height: 15),
+  Widget _buildPlayer(Player? player) {
+    if (player != null) {
+      return CustomAvatar(
+        onTap: (){
+          var i = _players.indexOf(player);
+          setState(() {
+            _players.removeAt(i);
+          });
+        },
+        name: "${player.getName}",
+        backgroundNameColor: player.color,
+        asset: Image.asset("${player.getAsset}"),
+      );
+    }
 
-        Text("Não foi possivel configurar o IP do Servidor!\nPor favor, Informe manualmente!",
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white,),
-        ),
-        
-        CustomButton(
-          icon: Icons.play_arrow,
-          label: 'Iniciar Servidor',
-          backgroundColor: Colors.blue,
-          margin: EdgeInsets.only(bottom: 15),
-          size: Size(250, 40),
-          onPressed: (){
-            setState(() {
-              _server = Server(host: '$_host');
-            });
-          },
-        ),
-        CustomButton(
-          icon: Icons.circle_outlined,
-          label: 'Jogar c/ BOT',
-          backgroundColor: Colors.yellow,
-          color: Colors.black,
-          size: Size(250, 40),
-          onPressed: (){
-            
-          },
-        ),
-      ],
+    return CustomAvatar(
+      backgroundColor: Colors.green[800],
+      asset: Icon(Icons.add, color: Colors.white),
+      onTap: (){
+        setState(() {
+          _players.add(new Player(
+            id: _players.length,
+            name: 'BOT ${_players.length+1}',
+            auto: true
+          ));
+        });
+      },
     );
   }
-
 }

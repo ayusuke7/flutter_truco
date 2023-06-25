@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'card_game.dart';
+
 class CustomAvatar extends StatelessWidget {
 
   final Widget asset;
@@ -10,6 +12,8 @@ class CustomAvatar extends StatelessWidget {
   final EdgeInsets? padding;
   final EdgeInsets? margin;
   final BoxDecoration? decoration;
+  final int cards;
+  final Size size;
 
   const CustomAvatar({ 
     Key? key,
@@ -20,37 +24,58 @@ class CustomAvatar extends StatelessWidget {
     this.margin,
     this.padding,
     this.decoration,
-    this.onTap
+    this.onTap,
+    this.cards = 0,
+    this.size = const Size(150, 150)
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: size.width,
+        height: size.height,
         padding: padding,
         margin: margin,
         decoration: decoration,
-        child: Column(
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            if(name != null) Container(
-              padding: const EdgeInsets.all(5.0),
-              decoration: BoxDecoration(
-                color:backgroundNameColor,
-                borderRadius: BorderRadius.circular(12)
-              ),
-              child: Text("$name",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13
-                )
+            
+            if (cards > 0) Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(cards, (i) => CardGame(
+                width: 35
+              )).toList()
+            ),
+
+            Positioned(
+              bottom: 10,
+              child: CircleAvatar(
+                child: asset,
+                maxRadius: size.width / 4,
+                backgroundColor: backgroundColor ?? Colors.transparent,
               ),
             ),
-            CircleAvatar(
-              maxRadius: 40,
-              backgroundColor: backgroundColor,
-              child: asset,
+
+            if(name != null) Positioned(
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.all(5.0),
+                decoration: BoxDecoration(
+                  color:backgroundNameColor,
+                  borderRadius: BorderRadius.circular(12)
+                ),
+                child: Text("$name",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13
+                  )
+                ),
+              ),
             ),
           ],
         ),

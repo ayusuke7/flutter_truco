@@ -12,11 +12,9 @@ class Dealer {
       var value = i % 10;
       var number = value + 1;
 
-      if (number == 1) number = 11;
-      if (number == 2) number = 12;
-      if (number == 3) number = 13;
+      if (number < 4) number += 10;
 
-      tmpDeck.add(CardModel(value: number, naipe: naipe ));
+      tmpDeck.add(CardModel(value: number, naipe: naipe));
 
       if(value == 9) naipe += 1;
     }
@@ -65,10 +63,10 @@ class Dealer {
     var flipers = jogadas.where((f) => !f.flip).toList();
     var manils = flipers.where((m) => m.manil).toList();
 
-    if(manils.isNotEmpty){
+    if (manils.isNotEmpty) {
       manils.sort((a, b) => b.naipe.compareTo(a.naipe));
       win = manils.first;
-    }else{
+    } else {
       flipers.sort((a, b) => b.value.compareTo(a.value));
       
       if(flipers[0].value > flipers[1].value){

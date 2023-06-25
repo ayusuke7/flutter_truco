@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_truco/components/card_game.dart';
 import 'package:flutter_truco/components/custom_avatar.dart';
-import 'package:flutter_truco/components/custom_button.dart';
 import 'package:flutter_truco/io/message.dart';
 import 'package:flutter_truco/io/server.dart';
 import 'package:flutter_truco/models/card.dart';
@@ -27,7 +26,6 @@ class GameTruco extends StatefulWidget {
 }
 
 class _GameTrucoState extends State<GameTruco> {
-
   MesaModel mesa = MesaModel(vez: 0);
 
   List<Player> players = [];
@@ -39,7 +37,7 @@ class _GameTrucoState extends State<GameTruco> {
   String? error; 
 
   CardModel? vira, winner;
-  int eqp1 = 0, eqp2 = 0, vale = 1, ini = 0;
+  int eqp1 = 0, eqp2 = 0, vale = 1, ini = 0, partidas = 1;
   bool visible = false;
   bool playing = false; 
 
@@ -47,7 +45,7 @@ class _GameTrucoState extends State<GameTruco> {
     setState(() {
       players = widget.players;
       for (var i = 0; i < players.length; i++) {
-        players[i].number = i;
+        players[i].id = i;
       }
     });
     
@@ -63,7 +61,7 @@ class _GameTrucoState extends State<GameTruco> {
     mesa.jogadas = jogadas.length;
 
     widget.server?.broadcast(Message(
-      type: MessageTypes.STATUS_MESA, 
+      type: MessageTypes.statusMesa, 
       data: mesa.toJson()
     ));
   }
@@ -90,13 +88,13 @@ class _GameTrucoState extends State<GameTruco> {
   void _sendMessageTruco(Player player) {
     var target1 = 0, target2 = 2;
 
-    if (player.number == 0 || player.number == 2) {
+    if (player.id == 0 || player.id == 2) {
       target1 = 1;
       target2 = 3;
     }
 
     var message = Message(
-      type: MessageTypes.GET_TRUCO, 
+      type: MessageTypes.getTruco, 
       data: "teste de string"
     );
 
@@ -166,7 +164,6 @@ class _GameTrucoState extends State<GameTruco> {
       if(eqp1 < 12 && eqp1 < 12){
         _distribuition();
       }
-
     } else {
       _executePlayerOrBot();
     }
@@ -196,7 +193,7 @@ class _GameTrucoState extends State<GameTruco> {
         }
         var host = players[i].host;
         widget.server?.sendTo("$host", Message(
-          type: MessageTypes.DISTRIBUITION, 
+          type: MessageTypes.distribuition, 
           data: listCardToJson(data)
         ));
       }
@@ -225,26 +222,7 @@ class _GameTrucoState extends State<GameTruco> {
     print(message.toJson());
 
     switch (message.type) {
-      case MessageTypes.CONNECT:
-        if (players.length < 4) {
-          var player = Player.fromJson(message.data);
-          player.host = message.host;
-          setState(() {
-            players.add(player);
-          });
-        }
-        break;
-      case MessageTypes.DISCONECT:
-        var player = Player.fromJson(message.data);
-        var i = players.indexWhere((p) => p.name == player.name);
-        if(i > -1){
-          setState(() {
-            players[i].auto = true;
-            players[i].name = null;
-          });
-        }
-        break;
-      case MessageTypes.SEND_CARD:
+      case MessageTypes.sendCard:
         var card = CardModel.fromJson(message.data);
         setState(() {
           jogadas.add(card);
@@ -252,7 +230,7 @@ class _GameTrucoState extends State<GameTruco> {
         });
         _checkVictory();
         break;
-      case MessageTypes.GET_TRUCO:
+      case MessageTypes.getTruco:
         var player = Player.fromJson(message.data);
         setState(() {
           truco = player;
@@ -265,6 +243,11 @@ class _GameTrucoState extends State<GameTruco> {
 
   void _onError(String error) {
     setState(() { error = error; });
+  }
+
+  void _stopServer() async {
+    await widget.server?.stop();
+    Navigator.of(context).pop();
   }
 
   @override
@@ -294,185 +277,83 @@ class _GameTrucoState extends State<GameTruco> {
           isLoading: truco != null,
           color: Colors.black,
           opacity: 0.7,
-          child: _buildRunningGame(),
-          progressIndicator: _buildMessageOverlay(),
+          progressIndicator: _buildMessage(),
+          child: Column(
+            children: [
+              _buildHeader(),
+              _buildTable(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBulletsVictory() {
-    return ListTile(
-      title: Text("Rodadas", style: TextStyle(color: Colors.white)),
-      trailing: SizedBox(
-        width: 60,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: List.generate(3, (i) {
-            var icon = Icons.circle_outlined;
-            var color = Colors.white;
+  Widget _buildTable() {
+    return Expanded(
+      child: Stack(
+        fit: StackFit.expand,
+        alignment: AlignmentDirectional.center,
+        children: [
 
-            if (victorys.length > i && victorys[i] == 1) {
-              icon = Icons.circle;
-              color = players[0].color;
-            } else if (victorys.length > i && victorys[i] == 2) {
-              icon = Icons.circle;
-              color = players[1].color;
-            }
-
-            return Icon(icon, color: color, size: 20);
-          }),
-        ),
-      ));
-  }
-
-  Widget _buildPlacarPlayers() {
-    if (players.length < 4) return SizedBox();
-
-    return Column(
-      children: [
-        Card(
-          color: players[0].color.withOpacity(.7),
-          child: ListTile(
-            title: Text("${players[0].getName}",
-                style: TextStyle(color: Colors.white, fontSize: 14)),
-            subtitle: Text("${players[2].getName}",
-                style: TextStyle(color: Colors.white, fontSize: 14)),
-            trailing: Text("$eqp1",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-          ),
-        ),
-        Card(
-          color: players[1].color.withOpacity(.7) ,
-          child: ListTile(
-            title: Text("${players[1].getName}",
-                style: TextStyle(color: Colors.white, fontSize: 14)),
-            subtitle: Text("${players[3].getName}",
-                style: TextStyle(color: Colors.white, fontSize: 14)),
-            trailing: Text("$eqp2",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRunningGame() {
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: Stack(
-            fit: StackFit.expand,
-            alignment: AlignmentDirectional.center,
-            children: [
-              for (var i = 0; i < players.length; i++)
-                Positioned(
-                  bottom: i == 0 ? 10 : null,
-                  left: i == 1 ? 10 : null,
-                  top: i == 2 ? 10 : null,
-                  right: i == 3 ? 10 : null,
-                  child: CustomAvatar(
-                    name: "${players[i].getName} (${players[i].cards.length})",
-                    backgroundColor: mesa.vez == i ? Colors.yellow : null,
-                    backgroundNameColor: players[i].color,
-                    asset: Image.asset("${players[i].getAsset}"),
-                  )
-                ),
-              
-              for (var i = 0; i < jogadas.length; i++)
-                TweenAnimationBuilder<double>(
-                  curve: Curves.easeInOut,
-                  duration: Duration(milliseconds: 500),
-                  tween: Tween<double>(begin: 0, end: 200),
-                  builder: (context, value, child) {
-                    var jogada = jogadas[i];
-                    return Positioned(
-                      bottom: jogada.player == 0 ? value : null,
-                      left: jogada.player == 1 ? value : null,
-                      top: jogada.player == 2 ? value : null,
-                      right: jogada.player == 3 ? value : null,
-                      child: RotatedBox(
-                        quarterTurns: jogada.player,
-                        child: CardGame(
-                          mark: jogada.uui == winner?.uui,
-                          card: jogada,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-            ],
-          )
-        ),
-        Expanded(
-          flex: 1,
-          child: Container(
-            color: Colors.green[800],
-            padding: EdgeInsets.all(10.0),
-            child: ListView(
-              children: [
-                CardGame(
-                  card: vira,
-                  margin: EdgeInsets.only(top: 10, bottom: 20),
-                ),
-                ListTile(
-                  title: Text("Servidor", style: TextStyle(
-                    fontSize: 16, 
-                    color: Colors.white, 
-                    fontWeight: FontWeight.bold
-                  )),
-                  subtitle: Text(
-                    host ?? "", 
-                    style: TextStyle(color: Colors.white)
-                  ),
-                  trailing: Icon(Icons.circle,
-                    size: 20,
-                    color: mesa.running ? Colors.blue : Colors.yellow
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ListTile(
-                  title: Text("Valendo", style: TextStyle(
-                    color: Colors.white,
-                  )),
-                  trailing: Text("$vale Ponto${vale > 1 ? "s" : ""}",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold
-                    )
-                  ),
-                ),
-                _buildBulletsVictory(),
-                const SizedBox(height: 10),
-                _buildPlacarPlayers(),
-                const SizedBox(height: 10),                         
-                CustomButton(
-                  disable: playing,
-                  icon: Icons.exit_to_app,
-                  label: "Sair",
-                  backgroundColor: Colors.green[900],
-                  margin: EdgeInsets.only(bottom: 5.0),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
+          Positioned(
+            right: 10,
+            bottom: 0,
+            child: TextButton.icon(
+              icon: Icon(Icons.exit_to_app),
+              label: Text('Finalizar'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white
+              ),
+              onPressed: _stopServer, 
             ),
           ),
-        ),
-      ],
+    
+          /* Avatar players positions */
+          for (var i = 0; i < players.length; i++)
+            Positioned(
+              bottom: i == 0 ? 10 : null,
+              left: i == 1 ? 10 : null,
+              top: i == 2 ? 10 : null,
+              right: i == 3 ? 10 : null,
+              child: CustomAvatar(
+                cards: players[i].cards.length,
+                name: players[i].getName,
+                backgroundColor: mesa.vez == i ? Colors.yellow : null,
+                backgroundNameColor: players[i].color,
+                asset: Image.asset("${players[i].getAsset}"),
+              )
+            ),
+          
+          /* Cards players */
+          for (var i = 0; i < jogadas.length; i++)
+            TweenAnimationBuilder<double>(
+              curve: Curves.easeInOut,
+              duration: Duration(milliseconds: 500),
+              tween: Tween<double>(begin: 0, end: 200),
+              builder: (context, value, child) {
+                var jogada = jogadas[i];
+                return Positioned(
+                  bottom: jogada.player == 0 ? value : null,
+                  left: jogada.player == 1 ? value : null,
+                  top: jogada.player == 2 ? value : null,
+                  right: jogada.player == 3 ? value : null,
+                  child: RotatedBox(
+                    quarterTurns: jogada.player,
+                    child: CardGame(
+                      mark: jogada.uui == winner?.uui,
+                      card: jogada,
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _buildMessageOverlay() {
+  Widget _buildMessage() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -494,4 +375,165 @@ class _GameTrucoState extends State<GameTruco> {
     );
   }
 
+  Widget _buildHeader() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.2,
+      constraints: BoxConstraints(
+        maxHeight: 130
+      ),
+      width: double.maxFinite,
+      color: Colors.green[800],
+      padding: EdgeInsets.all(7.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Card(
+              color: players[0].color,
+              child: ListTile(
+                title: Text("${players[0].getName}",
+                  softWrap: false,
+                  style: TextStyle(color: Colors.white, fontSize: 14)
+                ),
+                subtitle: Text("${players[2].getName}",
+                  softWrap: false,
+                  style: TextStyle(color: Colors.white, fontSize: 14)
+                ),
+                trailing: Text("$eqp1",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold
+                  )
+                ),
+              ),
+            ),
+          ),
+          Container(
+            width: 25.0,
+            alignment: Alignment.center,
+            child: const Text('X', style: TextStyle(
+              fontSize: 22,
+              color: Colors.white,
+              fontWeight: FontWeight.bold
+            )),
+          ),
+          SizedBox(
+            width: 100,
+            child: Card(
+              color: players[1].color,
+              child: ListTile(
+                title: Text("${players[1].getName}",
+                  softWrap: false,
+                  style: TextStyle(color: Colors.white, fontSize: 14)),
+                subtitle: Text("${players[3].getName}",
+                  softWrap: false,
+                  style: TextStyle(color: Colors.white, fontSize: 14)),
+                trailing: Text("$eqp2",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ),
+          Container(
+            width: 100,
+            margin: EdgeInsets.only(left: 20),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: Colors.white)
+              )
+            ),
+            child: ListTile(
+              title: Text("Rodada",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold
+                )
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (i) {
+                    var icon = Icons.circle_outlined;
+                    var color = Colors.white;
+                
+                    if (victorys.length > i && victorys[i] == 1) {
+                      icon = Icons.circle;
+                      color = players[0].color;
+                    } else if (victorys.length > i && victorys[i] == 2) {
+                      icon = Icons.circle;
+                      color = players[1].color;
+                    }
+                
+                    return Icon(icon, color: color, size: 20);
+                  }),
+                ),
+              )
+            ),
+          ),
+          Container(
+            width: 100,
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: Colors.white)
+              )
+            ),
+            child: ListTile(
+              title: Text("Valendo",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold
+                )
+              ),
+              subtitle: Text("$vale",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold
+                )
+              )
+            ),
+          ),
+          Container(
+            width: 100,
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: Colors.white)
+              )
+            ),
+            child: ListTile(
+              title: Text("Partidas",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold
+                )
+              ),
+              subtitle: Text("$partidas",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold
+                )
+              )
+            ),
+          ),
+          CardGame(
+            card: vira,
+            width: 65.0,
+          ),
+          
+        ],
+      ),
+    );
+  }
 }

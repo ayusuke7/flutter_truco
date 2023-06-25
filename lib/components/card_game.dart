@@ -34,10 +34,10 @@ class CardGame extends StatelessWidget {
   Widget build(BuildContext context) {
     
     var sWidth = selected ? (width+20) : width;
-    var sHeight = selected ? (width+80) : (width+60);
+    var sHeight = selected ? (width * 1.7) : (width * 1.5);
+    var size = Size(sWidth, sHeight);
 
     var flip = (card?.flip ?? card == null) || !visible;
-    var size = Size(sWidth, sHeight);
 
     return GestureDetector(
       onTap: onTap,
@@ -131,43 +131,32 @@ class CardGame extends StatelessWidget {
           height: size.height,
           decoration: BoxDecoration(
             color: Colors.blueGrey[400],
-            border: Border.all(width: 2.5, color: Colors.white),
+            border: Border.all(
+              width: width > 50 ? 2.5 : 1, 
+              color: Colors.white
+            ),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Image.asset(
-                    Assets.club, 
-                    width: 40.0, 
-                    height: 30.0
-                  ),
-                  Image.asset(
-                    Assets.heart, 
-                    width: 30.0, 
-                    height: 30.0
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Image.asset(
-                    Assets.spade, 
-                    width: 30.0, 
-                    height: 30.0
-                  ),
-                  Image.asset(
-                    Assets.diamond, 
-                    width: 30.0, 
-                    height: 30.0
-                  )
-                ],
-              )
-            ],
+          child: FittedBox(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Image.asset(Assets.club),
+                    Image.asset(Assets.heart),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Image.asset(Assets.spade),
+                    Image.asset(Assets.diamond)
+                  ],
+                )
+              ],
+            ),
           ),
         ),
       ),

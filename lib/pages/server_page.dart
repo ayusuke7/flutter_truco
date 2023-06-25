@@ -42,6 +42,7 @@ class _ServerPageState extends State<ServerPage> {
           if (_players.length < 4) {
             var player = Player.fromJson(m.data);
             player.host = m.host;
+            player.team = _players.length % 2 + 1;
             setState(() { _players.add(player); });
           }
           break;
@@ -218,6 +219,7 @@ class _ServerPageState extends State<ServerPage> {
         setState(() {
           _players.add(new Player(
             id: _players.length,
+            team: _players.length % 2 + 1,
             name: 'BOT ${_players.length+1}',
             auto: true
           ));

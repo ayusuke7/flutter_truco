@@ -17,6 +17,8 @@ class CardModel {
   final int value;
   
   int player;
+  int team;
+  
   bool manil;
   bool flip;
 
@@ -24,6 +26,7 @@ class CardModel {
     required this.value,
     required this.naipe,
     this.player = 0,
+    this.team = 0,
     this.flip = false,
     this.manil = false
   });
@@ -41,7 +44,7 @@ class CardModel {
   }
 
   String get detail {
-    return "Player: $player, Card: $label, Value: $value, Naipe: $naipe, Manil: $manil";
+    return "Team: $team, Player: $player, Card: $label, Value: $value, Naipe: $naipe, Manil: $manil";
   }
 
   Color get color {
@@ -80,6 +83,7 @@ class CardModel {
       player: json["player"],
       manil: json["manil"],
       flip: json["flip"],
+      team: json["team"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -88,6 +92,7 @@ class CardModel {
       "player": player,
       "manil": manil,
       "flip": flip,
+      "team": team,
   };
 
 }

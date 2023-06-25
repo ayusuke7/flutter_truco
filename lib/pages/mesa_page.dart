@@ -72,7 +72,10 @@ class _GameTrucoState extends State<GameTruco> {
     if (vez != null && players[vez].auto) {
       
       await Future.delayed(Duration(seconds: 2));
-      CardModel card = players[vez].randomCard();
+      CardModel card = Dealer.checkBestCard(
+        players[vez].cards,
+        jogadas
+      );
       
       setState(() {
         jogadas.add(card);
@@ -86,9 +89,10 @@ class _GameTrucoState extends State<GameTruco> {
   }
 
   void _sendMessageTruco(Player player) {
+    var index = players.indexOf(player);
     var target1 = 0, target2 = 2;
-
-    if (player.id == 0 || player.id == 2) {
+    
+    if (index == 0 || index == 2) {
       target1 = 1;
       target2 = 3;
     }
@@ -114,26 +118,20 @@ class _GameTrucoState extends State<GameTruco> {
     if (jogadas.length == 4) {
      
       CardModel? win = Dealer.checkWinTruco(jogadas);
-
       print("winner => ${win?.toJson()}");
-
       setState(() { winner = win; });
 
       await Future.delayed(Duration(seconds: 1));
-
-      int equipe = win == null ? 0 : win.player % 2 + 1;
-
+      
       setState(() {
         jogadas.clear();
-        victorys.add(equipe);
+        victorys.add(win?.team ?? 0);
         mesa.vez = win?.player ?? mesa.vez;
         mesa.mao = 1;
       });
 
       print("victorys => $victorys");
-
-      await Future.delayed(Duration(seconds: 1));
-
+      await Future.delayed(Duration(seconds: 2));
       _checkFinishRounds();
     } else {
        setState(() {
@@ -143,7 +141,6 @@ class _GameTrucoState extends State<GameTruco> {
       _executePlayerOrBot();
     }
 
-    print("next => ${mesa.vez}");
   }
 
   void _checkFinishRounds() {
@@ -264,7 +261,9 @@ class _GameTrucoState extends State<GameTruco> {
 
   @override
   void dispose() {
-    widget.server?.stop();
+    if (widget.server != null) {
+      widget.server?.stop();
+    }
     super.dispose();
   }
 

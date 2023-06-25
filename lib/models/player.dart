@@ -8,16 +8,19 @@ class Player {
   final Placar placar = new Placar();
 
   List<CardModel> _cards = [];
+
   String? asset;
   String? name;
   String? host;
   
   bool auto;
+  int team;
   int id;
 
   Player({
     required this.id,
     this.auto = false,
+    this.team = 0,
     this.name,
     this.asset,
     this.host
@@ -34,11 +37,12 @@ class Player {
     _cards.forEach((e) => print("${e.detail}"));
   }
 
-  void setCards(List<CardModel> newCards, {CardModel? vira}){
+  void setCards(List<CardModel> newCards, { CardModel? vira }){
     _cards.clear();
     _cards = newCards.map((e){
       var card = CardModel(
         player: id,
+        team: team,
         naipe: e.naipe, 
         value: e.value,
       );
@@ -88,23 +92,13 @@ class Player {
     return "BOT $id";
   }
 
-  int get equipe => id % 2 + 1;
-
-  CardModel randomCard({ List<CardModel>? jogadas }){
-    
-    if(cards.length == 1) return _cards.first;
-
-    var i = Random.secure().nextInt(_cards.length);
-    
-    return _cards[i];
-  }
-
   factory Player.fromJson(Map<String, dynamic> json) => Player(
       name: json["name"],
       id: json["id"],
       auto: json["auto"],
       asset: json["asset"],
       host: json["host"],
+      team: json["team"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -113,6 +107,7 @@ class Player {
       "auto": auto,
       "asset": asset,
       "host": host,
+      "team": team,
   };
 
 }

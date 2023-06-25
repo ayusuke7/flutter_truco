@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter_truco/models/card.dart';
 
 class Dealer {
@@ -60,13 +61,17 @@ class Dealer {
 
     jogadas.forEach((e) => print("${e.detail}\n"));
 
+    /* filtra apenas as que não estão virada */
     var flipers = jogadas.where((f) => !f.flip).toList();
     var manils = flipers.where((m) => m.manil).toList();
 
+    /* Verifica se tem manilhas e retorna o vencedor delas */
     if (manils.isNotEmpty) {
       manils.sort((a, b) => b.naipe.compareTo(a.naipe));
       win = manils.first;
     } else {
+
+      /* Orderna pelos valores de maior p/ menor e testa 0 e 1 */
       flipers.sort((a, b) => b.value.compareTo(a.value));
       
       if(flipers[0].value > flipers[1].value){
@@ -86,4 +91,43 @@ class Dealer {
 
   }
   
+  static CardModel checkBestCard(List<CardModel> hand, List<CardModel> deck) {
+    if(hand.length == 1) return hand.first;
+    
+    /* Ordena da mais forte > fraca */
+    hand.sort((a, b) => b.value.compareTo(a.value));
+
+    /* Filtra as manilhas */
+    var manils = hand.where((m) => m.manil).toList();
+
+    /* Primeira ou Segunda Jogada */
+    if (deck.length == 0 || deck.length == 1) {
+      /* Se tiver 1 manilha de OURO ou ESPADA joga */
+      if (manils.length == 1 && manils.first.value < 2){
+        return manils.first;
+      }else 
+      /* Se tive +1 manilha joga a mais fraca */
+      if (manils.length > 1) {
+       return manils.last; 
+      }
+    } else
+    /* Terceiro a Jogar */ 
+    if (deck.length == 2){
+      /* Se o companheiro não venceu a primeira jogar a mais forte */
+      if (deck[0].value < deck[1].value) {
+        return manils.isNotEmpty ? manils.last : hand.first;
+      }
+    } else
+    /* Ultimo a Jogar */ 
+    if (deck.length == 3){
+      /* Se o companheiro não venceu a segunda jogar a mais forte */
+      if (deck[1].value < deck[0].value && 
+          deck[1].value < deck[2].value) {
+        return manils.isNotEmpty ? manils.last : hand.first;
+      }
+    }
+    
+    /* Joga a mais fraca */
+    return hand.last;
+  }
 }

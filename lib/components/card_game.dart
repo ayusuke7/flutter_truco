@@ -14,6 +14,7 @@ class CardGame extends StatelessWidget {
 
   final double width;
   final double fontSize;
+  final BoxConstraints? constraints;
   final EdgeInsets? margin;
   final Function()? onTap;
 
@@ -28,6 +29,10 @@ class CardGame extends StatelessWidget {
     this.visible = true,
     this.disabled = false,
     this.selected = false,
+    this.constraints = const BoxConstraints(
+      maxWidth: 110.0,
+      maxHeight: 160.0
+    ),
   }) : super(key: key);
 
   @override
@@ -93,6 +98,7 @@ class CardGame extends StatelessWidget {
         child: Container(
           width: size.width,
           height: size.height,
+          constraints: constraints,
           decoration: BoxDecoration(
             color: mark ? Colors.yellow[100] : Colors.white,
             borderRadius: BorderRadius.circular(8)
@@ -129,6 +135,7 @@ class CardGame extends StatelessWidget {
         child: Container(
           width: size.width,
           height: size.height,
+          constraints: constraints,
           decoration: BoxDecoration(
             color: Colors.blueGrey[400],
             border: Border.all(

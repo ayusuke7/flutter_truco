@@ -7,13 +7,11 @@ class CreatePlayer extends StatefulWidget {
 
   final CreatePlayerModel? model;
   final Function(CreatePlayerModel model) onTapSave;
-  final Function(CreatePlayerModel model) onTapConnect;
 
   const CreatePlayer({ 
     Key? key,
     this.model,
     required this.onTapSave,
-    required this.onTapConnect,
   }) : super(key: key);
 
   @override
@@ -48,7 +46,7 @@ class _CreatePlayerState extends State<CreatePlayer> {
 
   }
 
-  void _onConnectOrSave({ bool save = false }){
+  void _onConnectOrSave(){
       if(
         _avatar != null && 
         _host.text.trim().isNotEmpty && 
@@ -61,11 +59,7 @@ class _CreatePlayerState extends State<CreatePlayer> {
             name: _name.text.trim()
           );
           
-          if(save){
-            widget.onTapSave(model);
-          }else{
-            widget.onTapConnect(model);
-          }
+          widget.onTapSave(model);
       } else {
         Fluttertoast.showToast(
           msg: "Preencha os campos!",
@@ -167,9 +161,7 @@ class _CreatePlayerState extends State<CreatePlayer> {
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton.icon(
-                  onPressed: (){
-                    _onConnectOrSave(save: true);
-                  },
+                  onPressed: _onConnectOrSave,
                   icon: Icon(Icons.save),
                   label: Text("Salvar"),
                   style: ElevatedButton.styleFrom(
@@ -177,20 +169,7 @@ class _CreatePlayerState extends State<CreatePlayer> {
                     fixedSize: Size(right, 40),
                     textStyle: TextStyle(fontSize: 16),
                   )
-                ),
-                const SizedBox(height: 10),
-                if(widget.model != null) ElevatedButton.icon(
-                  onPressed: (){
-                    _onConnectOrSave();
-                  },
-                  icon: Icon(Icons.bolt),
-                  label: Text("Conectar"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    fixedSize: Size(right, 40),
-                    textStyle: TextStyle(fontSize: 16),
-                  )
-                ),
+                )
               ],
             ),
           ),

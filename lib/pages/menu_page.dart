@@ -5,6 +5,7 @@ import 'package:flutter_truco/models/create_player.dart';
 import 'package:flutter_truco/pages/player_page.dart';
 import 'package:flutter_truco/pages/server_page.dart';
 import 'package:flutter_truco/utils/storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class MenuPage extends StatefulWidget {
   const MenuPage({ Key? key }) : super(key: key);
@@ -18,10 +19,20 @@ class _MenuPageState extends State<MenuPage> {
   CreatePlayerModel? player;
   bool modePlayer = true;
 
-  void _onTapMesa(){
-    Navigator.of(context).push(MaterialPageRoute(
+  void _onTapConnect() {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (ctx) => PlayerTruco(model: player)
+    ));
+  }
+
+  void _onTapMesa() async {
+    var erro = await Navigator.of(context).push(MaterialPageRoute(
       builder: (ctx) => ServerPage()
     ));
+    
+    if (erro != null) {
+      Fluttertoast.showToast(msg: erro);
+    }
   }
 
   void _onTapPlayer(){
@@ -37,14 +48,6 @@ class _MenuPageState extends State<MenuPage> {
               Navigator.of(context).pop();
               setState(() { player = model; });
               Storage.saveModelPlayer(model);
-            },
-            onTapConnect: (model){
-              Navigator.of(context).pop();
-              setState(() { player = model; });
-              Storage.saveModelPlayer(model);
-              Navigator.push(context, MaterialPageRoute(
-                builder: (ctx) => PlayerTruco(model: player)
-              ));
             },
           ),
         );
@@ -111,6 +114,7 @@ class _MenuPageState extends State<MenuPage> {
                     ElevatedButton(
                       onPressed: _onTapMesa, 
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Image.asset(
                             Assets.truco,
@@ -123,34 +127,52 @@ class _MenuPageState extends State<MenuPage> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
-                        padding: EdgeInsets.all(15.0)
+                        padding: EdgeInsets.all(15.0),
+                        fixedSize: Size(170, modePlayer ? 280 : 220)
                       ),
                     ),
                     const SizedBox(width: 20),
-                    ElevatedButton(
-                      onPressed: _onTapPlayer, 
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          player != null ? Image.asset("${player?.avatar}", 
-                            width: 130, 
-                            height: 130
-                          ) : Icon(Icons.face, size: 100.0),
-                          const SizedBox(height: 10),
-                          Text(player?.name ?? "PLAYER", style: textStyle, softWrap: false,),
-                          Text(player?.host ?? "", style: TextStyle(
-                            fontSize: 18
-                          )),
-                        ],
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        padding: EdgeInsets.all(15.0),
-                        fixedSize: Size(170, 220)
-                      ),
+                    Column(
+                      children: [
+                        ElevatedButton(
+                          onPressed: _onTapPlayer, 
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              player != null ? Image.asset("${player?.avatar}", 
+                                width: 130, 
+                                height: 130
+                              ) : Icon(Icons.face, size: 100.0),
+                              const SizedBox(height: 10),
+                              Text(player?.name ?? "PLAYER", style: textStyle, softWrap: false,),
+                              Text(player?.host ?? "", style: TextStyle(
+                                fontSize: 18
+                              )),
+                            ],
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            padding: EdgeInsets.all(15.0),
+                            fixedSize: Size(170, 220)
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        if (modePlayer) ElevatedButton.icon(
+                          onPressed: _onTapConnect,
+                          icon: Icon(Icons.bolt),
+                          label: Text("Conectar"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.yellow,
+                            foregroundColor: Colors.black,
+                            fixedSize: Size(170, 40),
+                            textStyle: TextStyle(fontSize: 16),
+                          )
+                        )
+                      ],
                     ),
                   ],
                 ),
+                
               ],
             ),
           ),

@@ -44,7 +44,7 @@ class CardModel {
   }
 
   String get detail {
-    return "Team: $team, Player: $player, Card: $label, Value: $value, Naipe: $naipe, Manil: $manil";
+    return "Team: $team, Player: $player, Card: $label, Naipe: $naipeLabel, Manil: $manil";
   }
 
   Color get color {

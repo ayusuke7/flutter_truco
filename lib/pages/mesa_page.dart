@@ -32,14 +32,14 @@ class _GameTrucoState extends State<GameTruco> {
   List<CardModel> jogadas = [];
   List<int> victorys = [], rounds = [];
 
+  CardModel? winner;
+  CardModel? vira;
   Player? truco;
   String? host;
   String? error; 
 
-  CardModel? vira, winner;
   int eqp1 = 0, eqp2 = 0, vale = 1, ini = 0, partidas = 1;
-  bool visible = false;
-  bool playing = false; 
+  bool visible = false, playing = false; 
 
   void _startGame() async {
     setState(() {
@@ -50,12 +50,11 @@ class _GameTrucoState extends State<GameTruco> {
     });
     
     await Future.delayed(Duration(seconds: 2));
-
     /* Uncomment code to distruition cards  */
     _distribuition();
   }
 
-  void _sendBroadcastMesa({bool delay = false}) async {
+  void _sendBroadcastMesa({ bool delay = false }) async {
     if (delay) await Future.delayed(Duration(seconds: 2));
 
     mesa.jogadas = jogadas.length;
@@ -66,11 +65,10 @@ class _GameTrucoState extends State<GameTruco> {
     ));
   }
 
-  void _executePlayerOrBot({bool delay = false}) async {
+  void _executePlayerOrBot({ bool delay = false }) async {
     var vez = mesa.vez;
     
     if (vez != null && players[vez].auto) {
-      
       await Future.delayed(Duration(seconds: 2));
       CardModel card = Dealer.checkBestCard(
         players[vez].cards,
@@ -113,28 +111,28 @@ class _GameTrucoState extends State<GameTruco> {
   }
 
   void _checkVictory() async {
-    await Future.delayed(Duration(milliseconds: 500));
-
+  
     if (jogadas.length == 4) {
      
-      CardModel? win = Dealer.checkWinTruco(jogadas);
-      print("winner => ${win?.toJson()}");
-      setState(() { winner = win; });
+      CardModel? cardWin = Dealer.checkWinTruco(jogadas);
+      print("CARD WINNER => ${cardWin?.detail}");
+      setState(() { winner = cardWin; });
 
-      await Future.delayed(Duration(seconds: 1));
+      await Future.delayed(Duration(seconds: 2));
       
+      /* Limpa a mesa e marca a vez do jogador */
       setState(() {
         jogadas.clear();
-        victorys.add(win?.team ?? 0);
-        mesa.vez = win?.player ?? mesa.vez;
+        victorys.add(cardWin?.team ?? 0);
+        mesa.vez = cardWin?.player ?? mesa.vez;
         mesa.mao = 1;
       });
 
-      print("victorys => $victorys");
-      await Future.delayed(Duration(seconds: 2));
+      print('MESA => ${mesa.toJson()}');
       _checkFinishRounds();
     } else {
-       setState(() {
+      await Future.delayed(Duration(milliseconds: 500));
+      setState(() {
         mesa.vez = mesa.vez == 3 ? 0 : mesa.vez! + 1;
         mesa.mao = mesa.mao == 3 ? 1 : mesa.mao! + 1;
       });
@@ -143,19 +141,21 @@ class _GameTrucoState extends State<GameTruco> {
 
   }
 
-  void _checkFinishRounds() {
-    var finish = Dealer.checkRounds(victorys);
-    print("finish => $finish");
+  void _checkFinishRounds() async {
+    print("VICTORYS => $victorys");
+    var teamWinner = Dealer.checkRounds(victorys);
 
-    if (finish != null) {
+    if (teamWinner != null) {
+      print("TEAM WINNER => $teamWinner");
+      
       var vez = ini == 3 ? 0 : ini + 1;
       setState(() {
-        rounds.add(finish);
+        rounds.add(teamWinner);
         ini = vez;
         mesa.vez = vez;
 
-        if (finish == 1) eqp1 += vale;
-        if (finish == 2) eqp2 += vale;
+        if (teamWinner == 1) eqp1 += vale;
+        if (teamWinner == 2) eqp2 += vale;
       });
 
       if(eqp1 < 12 && eqp1 < 12){
@@ -164,6 +164,7 @@ class _GameTrucoState extends State<GameTruco> {
     } else {
       _executePlayerOrBot();
     }
+
   }
 
   void _distribuition() async {
@@ -174,28 +175,38 @@ class _GameTrucoState extends State<GameTruco> {
       naipe: tmpDeck.last.naipe,
     );
 
+    /* distribuition cards to all players */
     for (var i = 0; i < players.length; i++) {
       var pos = i * 3;
       var cards = tmpDeck.getRange(pos, pos + 3).toList();
 
-      setState(() {
-        players[i].setCards(cards, vira: tmpVira);
+      setState(() { 
+        var newCards = Dealer.updateCards(cards,
+          vira: tmpVira,
+          player: players[i]
+        );
+        players[i].setCards(newCards); 
       });
 
+      /* send card to player client connected */
       if (!players[i].auto) {
         var data = List.of(players[i].cards);
         /* Flip all card with black round */
+        
         if(eqp1 == 11 && eqp2 == 11) {
           data.forEach((c) => c.flip = true);
         }
+
         var host = players[i].host;
         widget.server?.sendTo("$host", Message(
           type: MessageTypes.distribuition, 
           data: listCardToJson(data)
         ));
       }
+
     }
 
+    /* restart values game */
     setState(() {
       jogadas.clear();
       victorys.clear();
@@ -251,7 +262,9 @@ class _GameTrucoState extends State<GameTruco> {
   void initState() {
     super.initState();
 
-    if(widget.server != null){
+    if(widget.server != null && 
+       widget.server!.running
+    ){
       widget.server?.onData = _onDataReceive;
       widget.server?.onError = _onError;
     }
@@ -261,7 +274,9 @@ class _GameTrucoState extends State<GameTruco> {
 
   @override
   void dispose() {
-    if (widget.server != null) {
+    if (widget.server != null && 
+        widget.server!.running
+      ) {
       widget.server?.stop();
     }
     super.dispose();
@@ -277,10 +292,10 @@ class _GameTrucoState extends State<GameTruco> {
           color: Colors.black,
           opacity: 0.7,
           progressIndicator: _buildMessage(),
-          child: Column(
+          child: Row(
             children: [
-              _buildHeader(),
               _buildTable(),
+              _buildSideMenu()
             ],
           ),
         ),
@@ -294,59 +309,14 @@ class _GameTrucoState extends State<GameTruco> {
         fit: StackFit.expand,
         alignment: AlignmentDirectional.center,
         children: [
-
-          Positioned(
-            right: 10,
-            bottom: 0,
-            child: TextButton.icon(
-              icon: Icon(Icons.exit_to_app),
-              label: Text('Finalizar'),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white
-              ),
-              onPressed: _stopServer, 
-            ),
-          ),
     
           /* Avatar players positions */
           for (var i = 0; i < players.length; i++)
-            Positioned(
-              bottom: i == 0 ? 10 : null,
-              left: i == 1 ? 10 : null,
-              top: i == 2 ? 10 : null,
-              right: i == 3 ? 10 : null,
-              child: CustomAvatar(
-                cards: players[i].cards.length,
-                name: players[i].getName,
-                backgroundColor: mesa.vez == i ? Colors.yellow : null,
-                backgroundNameColor: players[i].color,
-                asset: Image.asset("${players[i].getAsset}"),
-              )
-            ),
+            _buildAvatar(players[i], i),
           
           /* Cards players */
           for (var i = 0; i < jogadas.length; i++)
-            TweenAnimationBuilder<double>(
-              curve: Curves.easeInOut,
-              duration: Duration(milliseconds: 500),
-              tween: Tween<double>(begin: 0, end: 200),
-              builder: (context, value, child) {
-                var jogada = jogadas[i];
-                return Positioned(
-                  bottom: jogada.player == 0 ? value : null,
-                  left: jogada.player == 1 ? value : null,
-                  top: jogada.player == 2 ? value : null,
-                  right: jogada.player == 3 ? value : null,
-                  child: RotatedBox(
-                    quarterTurns: jogada.player,
-                    child: CardGame(
-                      mark: jogada.uui == winner?.uui,
-                      card: jogada,
-                    ),
-                  ),
-                );
-              },
-            ),
+            _buildCard(jogadas[i], i)
         ],
       ),
     );
@@ -374,165 +344,188 @@ class _GameTrucoState extends State<GameTruco> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildSideMenu() {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.2,
+      width: MediaQuery.of(context).size.width * 0.2,
       constraints: BoxConstraints(
-        maxHeight: 130
+        maxWidth: 250
       ),
-      width: double.maxFinite,
       color: Colors.green[800],
       padding: EdgeInsets.all(7.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: ListView(
         children: [
-          SizedBox(
-            width: 100,
-            child: Card(
-              color: players[0].color,
-              child: ListTile(
-                title: Text("${players[0].getName}",
-                  softWrap: false,
-                  style: TextStyle(color: Colors.white, fontSize: 14)
-                ),
-                subtitle: Text("${players[2].getName}",
-                  softWrap: false,
-                  style: TextStyle(color: Colors.white, fontSize: 14)
-                ),
-                trailing: Text("$eqp1",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold
-                  )
-                ),
-              ),
-            ),
-          ),
-          Container(
-            width: 25.0,
-            alignment: Alignment.center,
-            child: const Text('X', style: TextStyle(
-              fontSize: 22,
-              color: Colors.white,
-              fontWeight: FontWeight.bold
-            )),
-          ),
-          SizedBox(
-            width: 100,
-            child: Card(
-              color: players[1].color,
-              child: ListTile(
-                title: Text("${players[1].getName}",
-                  softWrap: false,
-                  style: TextStyle(color: Colors.white, fontSize: 14)),
-                subtitle: Text("${players[3].getName}",
-                  softWrap: false,
-                  style: TextStyle(color: Colors.white, fontSize: 14)),
-                trailing: Text("$eqp2",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ),
-          Container(
-            width: 100,
-            margin: EdgeInsets.only(left: 20),
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(color: Colors.white)
-              )
-            ),
-            child: ListTile(
-              title: Text("Rodada",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold
-                )
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 5),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(3, (i) {
-                    var icon = Icons.circle_outlined;
-                    var color = Colors.white;
-                
-                    if (victorys.length > i && victorys[i] == 1) {
-                      icon = Icons.circle;
-                      color = players[0].color;
-                    } else if (victorys.length > i && victorys[i] == 2) {
-                      icon = Icons.circle;
-                      color = players[1].color;
-                    }
-                
-                    return Icon(icon, color: color, size: 20);
-                  }),
-                ),
-              )
-            ),
-          ),
-          Container(
-            width: 100,
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(color: Colors.white)
-              )
-            ),
-            child: ListTile(
-              title: Text("Valendo",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold
-                )
-              ),
-              subtitle: Text("$vale",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold
-                )
-              )
-            ),
-          ),
-          Container(
-            width: 100,
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(color: Colors.white)
-              )
-            ),
-            child: ListTile(
-              title: Text("Partidas",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold
-                )
-              ),
-              subtitle: Text("$partidas",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold
-                )
-              )
-            ),
-          ),
           CardGame(
             card: vira,
-            width: 65.0,
+            width: 70.0,
           ),
-          
+          Container(
+            margin: EdgeInsets.symmetric(
+              vertical: 10.0
+            ),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.white))
+            ),
+            child: TextButton.icon(
+              label: Text('Sair'),
+              icon: Icon(Icons.exit_to_app),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white
+              ),
+              onPressed: _stopServer, 
+            ),
+          ),
+          ListTile(
+            title: Text("Rodada",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold
+              )
+            ),
+            trailing: SizedBox(
+              width: 60,
+              child: Row(
+                children: List.generate(3, (i) {
+                  var icon = Icons.circle_outlined;
+                  var color = Colors.white;
+                    
+                  if (victorys.length > i && victorys[i] == 0) {
+                    icon = Icons.circle;
+                  } else 
+                  if (victorys.length > i && victorys[i] == 1) {
+                    icon = Icons.circle;
+                    color = players[0].color;
+                  } else 
+                  if (victorys.length > i && victorys[i] == 2) {
+                    icon = Icons.circle;
+                    color = players[1].color;
+                  }
+              
+                  return Icon(icon, color: color, size: 20);
+                }),
+              ),
+            )
+          ),
+          ListTile(
+            title: Text("Partidas",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold
+              )
+            ),
+            trailing: Text("$partidas",
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.white,
+                fontWeight: FontWeight.bold
+              )
+            )
+          ),
+          ListTile(
+            title: Text("Valendo",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold
+              )
+            ),
+            trailing: Text("$vale",
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.white,
+                fontWeight: FontWeight.bold
+              )
+            )
+          ),
+          Divider(color: Colors.white, height: 40.0),
+          Card(
+            color: players[0].color,
+            child: ListTile(
+              dense: true,
+              title: Text("${players[0].getName}",
+                softWrap: false,
+                style: TextStyle(color: Colors.white, fontSize: 14)
+              ),
+              subtitle: Text("${players[2].getName}",
+                softWrap: false,
+                style: TextStyle(color: Colors.white, fontSize: 14)
+              ),
+              trailing: Text("$eqp1",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold
+                )
+              ),
+            ),
+          ),
+          Card(
+            color: players[1].color,
+            child: ListTile(
+              dense: true,
+              title: Text("${players[1].getName}",
+                softWrap: false,
+                style: TextStyle(color: Colors.white, fontSize: 14)),
+              subtitle: Text("${players[3].getName}",
+                softWrap: false,
+                style: TextStyle(color: Colors.white, fontSize: 14)),
+              trailing: Text("$eqp2",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold)),
+            ),
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildAvatar(Player player, int i) {
+    return Positioned(
+      bottom: i == 0 ? 5 : null,
+      left: i == 1 ? 5 : null,
+      top: i == 2 ? 5 : null,
+      right: i == 3 ? 5 : null,
+      child: CustomAvatar(
+        cards: player.cards.length,
+        name: player.getName,
+        backgroundColor: mesa.vez == i ? Colors.yellow : null,
+        backgroundNameColor: player.color,
+        asset: Image.asset("${player.getAsset}"),
+        onTap: (){
+          if (mesa.vez == player.id && player.auto) {
+            _executePlayerOrBot();
+          }
+        },
+      )
+    );
+  }
+
+  Widget _buildCard(CardModel jogada, int i) {
+    var size = MediaQuery.of(context).size;
+    var end = i % 2 == 0 ? size.height / 2 : size.width / 3.5;
+    
+    return TweenAnimationBuilder<double>(
+      curve: Curves.easeInOut,
+      duration: Duration(milliseconds: 500),
+      tween: Tween<double>(begin: 0, end: end),
+      builder: (context, value, child) {
+        var mark = jogada.uui == winner?.uui;
+        return Positioned(
+          bottom: jogada.player == 0 ? value : null,
+          left: jogada.player == 1 ? value : null,
+          top: jogada.player == 2 ? value : null,
+          right: jogada.player == 3 ? value : null,
+          child: RotatedBox(
+            quarterTurns: jogada.player,
+            child: CardGame(
+              width: size.height * 0.15,
+              card: jogada,
+              mark: mark,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
 }

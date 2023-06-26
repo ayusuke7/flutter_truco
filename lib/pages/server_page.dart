@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_truco/components/custom_avatar.dart';
 import 'package:flutter_truco/components/custom_button.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_truco/io/server.dart';
 import 'package:flutter_truco/models/player.dart';
 import 'package:flutter_truco/pages/mesa_page.dart';
 import 'package:flutter_truco/utils/helper.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 class ServerPage extends StatefulWidget {
@@ -22,7 +25,6 @@ class _ServerPageState extends State<ServerPage> {
 
   String? _host;
   Server? _server;
-  String? _message;
   
   void _getHost() async {
     var value = await _network.getWifiIP();
@@ -42,13 +44,14 @@ class _ServerPageState extends State<ServerPage> {
           if (_players.length < 4) {
             var player = Player.fromJson(m.data);
             player.host = m.host;
+            player.player = _players.length;
             player.team = _players.length % 2 + 1;
             setState(() { _players.add(player); });
           }
           break;
         case MessageTypes.disconect:
           var player = Player.fromJson(m.data);
-          var i = _players.indexWhere((p) => p.name == player.name);
+          var i = _players.indexWhere((p) => p.id == player.id);
           if(i > -1){
             setState(() {
               _players[i].auto = true;
@@ -60,7 +63,8 @@ class _ServerPageState extends State<ServerPage> {
       }
     };
     _server?.onError = (String e) {
-      setState(() { _message = e; });
+      var erro = 'Error ao iniciar o servidor, tente novamente!';
+      Navigator.pop(context, erro);
     };
 
     await _server?.start();
@@ -71,11 +75,19 @@ class _ServerPageState extends State<ServerPage> {
       barrierDismissible: false,
       context: context, 
       builder: (ctx) => SimpleDialog(
+        contentPadding: EdgeInsets.all(20.0),
+        backgroundColor: Colors.black.withOpacity(.35),
         children: [
+          Text('Informe o IP do Servidor',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18.0
+            ),),
           Container(
-            width: 250.0,
+            width: 150.0,
             margin: const EdgeInsets.symmetric(
-              vertical: 50
+              vertical: 30
             ),
             child: TextField(
               onChanged: (value){
@@ -95,7 +107,7 @@ class _ServerPageState extends State<ServerPage> {
           CustomButton(
             icon: Icons.play_circle,
             label: "Iniciar Servidor",
-            size: Size(250, 40),
+            size: Size(150, 40),
             backgroundColor: Colors.blue,
             onPressed: () {
               if (Helper.isIpv4(_host)) {
@@ -152,7 +164,7 @@ class _ServerPageState extends State<ServerPage> {
                   color: Colors.yellow
                 )
               ),
-              subtitle: Text(_message ?? subtitle,
+              subtitle: Text(subtitle,
                 textAlign: TextAlign.center, 
                 style: TextStyle(
                   color: Colors.white,
@@ -174,23 +186,46 @@ class _ServerPageState extends State<ServerPage> {
               ),
             ),
             
-            CustomButton(
-              disable: _players.length < 4,
-              icon: Icons.play_circle,
-              label: "Iniciar Partida",
-              size: Size(250, 40),
-              backgroundColor: Colors.yellow,
-              color: Colors.black,
-              onPressed: () {
-                Navigator.pushReplacement(context, MaterialPageRoute(
-                  builder: (_) => GameTruco(
-                    server: _server,
-                    players: _players
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CustomButton(
+                  disable: _players.length < 4,
+                  icon: Icons.play_circle,
+                  label: "Iniciar Partida",
+                  size: Size(200, 40),
+                  backgroundColor: Colors.yellow,
+                  margin: EdgeInsets.only(right: 15.0),
+                  color: Colors.black,
+                  onPressed: () async {
+                    if (_players.every((p) => p.auto)) {
+                      await _server?.stop();
+                    }
+
+                    Navigator.pushReplacement(context, MaterialPageRoute(
+                      builder: (_) => GameTruco(
+                        server: _server,
+                        players: _players
+                      )
+                    ));
+                  },
+                ),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    await _server?.stop();
+                    Navigator.pop(context);
+                  },
+                  icon: Icon(Icons.close),
+                  label: Text("Cancelar"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[400],
+                    fixedSize: Size(200, 40),
+                    textStyle: TextStyle(fontSize: 16),
                   )
-                ));
-              },
+                )
+              ],
             ),
-            
+
           ],
         ),
       ),
@@ -201,10 +236,12 @@ class _ServerPageState extends State<ServerPage> {
     if (player != null) {
       return CustomAvatar(
         onTap: (){
-          var i = _players.indexOf(player);
-          setState(() {
-            _players.removeAt(i);
-          });
+          if (player.auto) {
+            var i = _players.indexOf(player);
+            setState(() {
+              _players.removeAt(i);
+            });
+          }
         },
         name: "${player.getName}",
         backgroundNameColor: player.color,
@@ -216,9 +253,11 @@ class _ServerPageState extends State<ServerPage> {
       backgroundColor: Colors.green[800],
       asset: Icon(Icons.add, color: Colors.white),
       onTap: (){
+        var id = 1000 + Random().nextInt(9999);
         setState(() {
-          _players.add(new Player(
-            id: _players.length,
+          _players.add(Player(
+            id: id,
+            player: _players.length,
             team: _players.length % 2 + 1,
             name: 'BOT ${_players.length+1}',
             auto: true

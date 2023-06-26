@@ -63,6 +63,7 @@ class _PlayerTrucoState extends State<PlayerTruco> {
     card.player = select!.player;
     card.manil = select!.manil;
     card.flip = select!.flip;
+    card.team = select!.team;
 
     var message = Message(
       type: MessageTypes.sendCard, 
@@ -113,7 +114,7 @@ class _PlayerTrucoState extends State<PlayerTruco> {
             player = play;
             loading = false;
           });
-        }else{
+        } else{
           Navigator.of(context).pop();
         }
       });
@@ -139,7 +140,8 @@ class _PlayerTrucoState extends State<PlayerTruco> {
         var cards = listCardFromJson(message.data);
         setState(() {
           running = true;
-          player?.id = cards.first.player;
+          player?.team = cards.first.team;
+          player?.player = cards.first.player;
           player?.setCards(cards);
         });
         break;

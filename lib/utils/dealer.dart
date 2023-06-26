@@ -1,5 +1,5 @@
-import 'dart:math';
 import 'package:flutter_truco/models/card.dart';
+import 'package:flutter_truco/models/player.dart';
 
 class Dealer {
 
@@ -129,5 +129,19 @@ class Dealer {
     
     /* Joga a mais fraca */
     return hand.last;
+  }
+
+  static List<CardModel> updateCards(List<CardModel> cards, {
+    required CardModel vira,
+    required Player player,
+  }) {
+    return cards.map((c) {
+      var manil = vira.value == 13 ? 4 : vira.value + 1;
+      c.manil = c.value == manil;
+      c.player = player.player;
+      c.team = player.team;
+      return c;
+    })
+    .toList();
   }
 }

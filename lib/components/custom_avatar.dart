@@ -26,7 +26,7 @@ class CustomAvatar extends StatelessWidget {
     this.decoration,
     this.onTap,
     this.cards = 0,
-    this.size = const Size(150, 150)
+    this.size = const Size(120, 120)
   }) : super(key: key);
 
   @override
@@ -44,11 +44,14 @@ class CustomAvatar extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             
-            if (cards > 0) Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(cards, (i) => CardGame(
-                width: 35
-              )).toList()
+            if (cards > 0) Positioned(
+              top: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(cards, (i) => CardGame(
+                  width: 30
+                )).toList()
+              ),
             ),
 
             Positioned(
